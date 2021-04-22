@@ -1,0 +1,552 @@
+---
+title: "EthyleneBiosynthesisNonLeaf"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(readr)
+library(tibble)
+library(plyr)
+library(EnvStats)
+library(ggplot2)
+library(reshape2)
+library(cowplot)
+library(patchwork)
+```
+
+```{r import data}
+#Import tissue data
+tmt <- read.csv("11 tissue for Peng 012920 - final.csv", stringsAsFactors = F)
+colnames(tmt) <- as.character(tmt[1,])
+tmt <- tmt[-1,]
+colnames(tmt)
+
+for (i in 9:158) {
+  tmt[,i] <- as.numeric(tmt[,i])
+}
+
+tmt$Gene <- substr(tmt$Accession,start = 1,stop = 14)
+#Import gene list
+Genes <- read.csv("CornCyc.EthyleneBiosynthesis.csv", stringsAsFactors = F)
+
+
+```
+#Subset Experiments
+```{r Subset}
+tmt.kernelBxM <- tmt[,c(1:18, 159)]
+tmt.kernelMxB <- tmt[,c(1:8, 19:28, 159)]
+
+tmt.root <- tmt[,c(1:8, 29:38, 159)]
+
+tmt.endo14BxM <- tmt[,c(1:8, 39:48, 159)]
+tmt.endo14MxB <- tmt[,c(1:8, 49:58, 159)]
+
+tmt.emb27BxM <- tmt[,c(1:8, 59:68, 159)]
+tmt.emb27MxB <- tmt[,c(1:8, 69:78, 159)]
+
+tmt.endo27BxM <- tmt[,c(1:8, 79:88, 159)]
+tmt.endo27MxB <- tmt[,c(1:8, 89:98, 159)]
+
+tmt.coleoptileTip <- tmt[,c(1:8, 99:108, 159)]
+
+tmt.radicleRoot <- tmt[,c(1:8, 109:118, 159)]
+
+tmt.germEm <- tmt[,c(1:8, 119:128, 159)]
+
+tmt.sdlRoot <- tmt[,c(1:8, 129:138, 159)]
+
+tmt.meristem <- tmt[,c(1:8, 139:148, 159)]
+
+tmt.ear14 <- tmt[,c(1:8,149:159)]
+
+```
+
+#Find averages for B73, Mo17 and hybrid for all experiments
+```{r Averages}
+#Kernel BxM
+tmt.kernelBxM$B73avg <- rowMeans(tmt.kernelBxM[,c("B73-1", "B73-2", "B73-3")])
+tmt.kernelBxM$Mo17avg <- rowMeans(tmt.kernelBxM[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.kernelBxM$hybridavg <- rowMeans(tmt.kernelBxM[,c("BM-1", "BM-2", "BM-3")])
+tmt.kernelBxM$MPavg <- rowMeans(tmt.kernelBxM[,c("B73avg", "Mo17avg")])
+
+tmt.kernelBxM$hyb.mp <- tmt.kernelBxM$hybridavg / tmt.kernelBxM$MPavg
+tmt.kernelBxM$B73.Mo17 <- tmt.kernelBxM$B73avg / tmt.kernelBxM$Mo17avg
+
+tmt.kernelBxM$l2.hyb.mp <- log2(tmt.kernelBxM$hyb.mp)
+tmt.kernelBxM$l2.B73.Mo17 <- log2(tmt.kernelBxM$B73.Mo17)
+
+#Kernel MxB
+tmt.kernelMxB$B73avg <- rowMeans(tmt.kernelMxB[,c("B73-1", "B73-2", "B73-3")])
+tmt.kernelMxB$Mo17avg <- rowMeans(tmt.kernelMxB[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.kernelMxB$hybridavg <- rowMeans(tmt.kernelMxB[,c("BM-1", "BM-2", "BM-3")])
+tmt.kernelMxB$MPavg <- rowMeans(tmt.kernelMxB[,c("B73avg", "Mo17avg")])
+
+tmt.kernelMxB$hyb.mp <- tmt.kernelMxB$hybridavg / tmt.kernelMxB$MPavg
+tmt.kernelMxB$B73.Mo17 <- tmt.kernelMxB$B73avg / tmt.kernelMxB$Mo17avg
+
+tmt.kernelMxB$l2.hyb.mp <- log2(tmt.kernelMxB$hyb.mp)
+tmt.kernelMxB$l2.B73.Mo17 <- log2(tmt.kernelMxB$B73.Mo17)
+
+#Root
+tmt.root$B73avg <- rowMeans(tmt.root[,c("B73-1", "B73-2", "B73-3")])
+tmt.root$Mo17avg <- rowMeans(tmt.root[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.root$hybridavg <- rowMeans(tmt.root[,c("BM-1", "BM-2", "BM-3")])
+tmt.root$MPavg <- rowMeans(tmt.root[,c("B73avg", "Mo17avg")])
+
+tmt.root$hyb.mp <- tmt.root$hybridavg / tmt.root$MPavg
+tmt.root$B73.Mo17 <- tmt.root$B73avg / tmt.root$Mo17avg
+
+tmt.root$l2.hyb.mp <- log2(tmt.root$hyb.mp)
+tmt.root$l2.B73.Mo17 <- log2(tmt.root$B73.Mo17)
+
+#endo14 BxM
+tmt.endo14BxM$B73avg <- rowMeans(tmt.endo14BxM[,c("B73-1", "B73-2", "B73-3")])
+tmt.endo14BxM$Mo17avg <- rowMeans(tmt.endo14BxM[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.endo14BxM$hybridavg <- rowMeans(tmt.endo14BxM[,c("BM-1", "BM-2", "BM-3")])
+tmt.endo14BxM$MPavg <- rowMeans(tmt.endo14BxM[,c("B73avg", "Mo17avg")])
+
+tmt.endo14BxM$hyb.mp <- tmt.endo14BxM$hybridavg / tmt.endo14BxM$MPavg
+tmt.endo14BxM$B73.Mo17 <- tmt.endo14BxM$B73avg / tmt.endo14BxM$Mo17avg
+
+tmt.endo14BxM$l2.hyb.mp <- log2(tmt.endo14BxM$hyb.mp)
+tmt.endo14BxM$l2.B73.Mo17 <- log2(tmt.endo14BxM$B73.Mo17)
+
+#endo14 MxB
+tmt.endo14MxB$B73avg <- rowMeans(tmt.endo14MxB[,c("B73-1", "B73-2", "B73-3")])
+tmt.endo14MxB$Mo17avg <- rowMeans(tmt.endo14MxB[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.endo14MxB$hybridavg <- rowMeans(tmt.endo14MxB[,c("BM-1", "BM-2", "BM-3")])
+tmt.endo14MxB$MPavg <- rowMeans(tmt.endo14MxB[,c("B73avg", "Mo17avg")])
+
+tmt.endo14MxB$hyb.mp <- tmt.endo14MxB$hybridavg / tmt.endo14MxB$MPavg
+tmt.endo14MxB$B73.Mo17 <- tmt.endo14MxB$B73avg / tmt.endo14MxB$Mo17avg
+
+tmt.endo14MxB$l2.hyb.mp <- log2(tmt.endo14MxB$hyb.mp)
+tmt.endo14MxB$l2.B73.Mo17 <- log2(tmt.endo14MxB$B73.Mo17)
+
+#emb27 BxM
+tmt.emb27BxM$B73avg <- rowMeans(tmt.emb27BxM[,c("B73-1", "B73-2", "B73-3")])
+tmt.emb27BxM$Mo17avg <- rowMeans(tmt.emb27BxM[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.emb27BxM$hybridavg <- rowMeans(tmt.emb27BxM[,c("BM-1", "BM-2", "BM-3")])
+tmt.emb27BxM$MPavg <- rowMeans(tmt.emb27BxM[,c("B73avg", "Mo17avg")])
+
+tmt.emb27BxM$hyb.mp <- tmt.emb27BxM$hybridavg / tmt.emb27BxM$MPavg
+tmt.emb27BxM$B73.Mo17 <- tmt.emb27BxM$B73avg / tmt.emb27BxM$Mo17avg
+
+tmt.emb27BxM$l2.hyb.mp <- log2(tmt.emb27BxM$hyb.mp)
+tmt.emb27BxM$l2.B73.Mo17 <- log2(tmt.emb27BxM$B73.Mo17)
+
+#emb27 MxB
+tmt.endo27MxB$B73avg <- rowMeans(tmt.endo27MxB[,c("B73-1", "B73-2", "B73-3")])
+tmt.endo27MxB$Mo17avg <- rowMeans(tmt.endo27MxB[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.endo27MxB$hybridavg <- rowMeans(tmt.endo27MxB[,c("BM-1", "BM-2", "BM-3")])
+tmt.endo27MxB$MPavg <- rowMeans(tmt.endo27MxB[,c("B73avg", "Mo17avg")])
+
+tmt.endo27MxB$hyb.mp <- tmt.endo27MxB$hybridavg / tmt.endo27MxB$MPavg
+tmt.endo27MxB$B73.Mo17 <- tmt.endo27MxB$B73avg / tmt.endo27MxB$Mo17avg
+
+tmt.endo27MxB$l2.hyb.mp <- log2(tmt.endo27MxB$hyb.mp)
+tmt.endo27MxB$l2.B73.Mo17 <- log2(tmt.endo27MxB$B73.Mo17)
+
+#endo27 BxM
+tmt.endo27BxM$B73avg <- rowMeans(tmt.endo27BxM[,c("B73-1", "B73-2", "B73-3")])
+tmt.endo27BxM$Mo17avg <- rowMeans(tmt.endo27BxM[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.endo27BxM$hybridavg <- rowMeans(tmt.endo27BxM[,c("BM-1", "BM-2", "BM-3")])
+tmt.endo27BxM$MPavg <- rowMeans(tmt.endo27BxM[,c("B73avg", "Mo17avg")])
+
+tmt.endo27BxM$hyb.mp <- tmt.endo27BxM$hybridavg / tmt.endo27BxM$MPavg
+tmt.endo27BxM$B73.Mo17 <- tmt.endo27BxM$B73avg / tmt.endo27BxM$Mo17avg
+
+tmt.endo27BxM$l2.hyb.mp <- log2(tmt.endo27BxM$hyb.mp)
+tmt.endo27BxM$l2.B73.Mo17 <- log2(tmt.endo27BxM$B73.Mo17)
+
+#endo27 MxB
+tmt.endo27MxB$B73avg <- rowMeans(tmt.endo27MxB[,c("B73-1", "B73-2", "B73-3")])
+tmt.endo27MxB$Mo17avg <- rowMeans(tmt.endo27MxB[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.endo27MxB$hybridavg <- rowMeans(tmt.endo27MxB[,c("BM-1", "BM-2", "BM-3")])
+tmt.endo27MxB$MPavg <- rowMeans(tmt.endo27MxB[,c("B73avg", "Mo17avg")])
+
+tmt.endo27MxB$hyb.mp <- tmt.endo27MxB$hybridavg / tmt.endo27MxB$MPavg
+tmt.endo27MxB$B73.Mo17 <- tmt.endo27MxB$B73avg / tmt.endo27MxB$Mo17avg
+
+tmt.endo27MxB$l2.hyb.mp <- log2(tmt.endo27MxB$hyb.mp)
+tmt.endo27MxB$l2.B73.Mo17 <- log2(tmt.endo27MxB$B73.Mo17)
+
+#Coleoptile Tip
+tmt.coleoptileTip$B73avg <- rowMeans(tmt.coleoptileTip[,c("B73-1", "B73-2", "B73-3")])
+tmt.coleoptileTip$Mo17avg <- rowMeans(tmt.coleoptileTip[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.coleoptileTip$hybridavg <- rowMeans(tmt.coleoptileTip[,c("BM-1", "BM-2", "BM-3")])
+tmt.coleoptileTip$MPavg <- rowMeans(tmt.coleoptileTip[,c("B73avg", "Mo17avg")])
+
+tmt.coleoptileTip$hyb.mp <- tmt.coleoptileTip$hybridavg / tmt.coleoptileTip$MPavg
+tmt.coleoptileTip$B73.Mo17 <- tmt.coleoptileTip$B73avg / tmt.coleoptileTip$Mo17avg
+
+tmt.coleoptileTip$l2.hyb.mp <- log2(tmt.coleoptileTip$hyb.mp)
+tmt.coleoptileTip$l2.B73.Mo17 <- log2(tmt.coleoptileTip$B73.Mo17)
+
+#Radicle Root
+tmt.radicleRoot$B73avg <- rowMeans(tmt.radicleRoot[,c("B73-1", "B73-2", "B73-3")])
+tmt.radicleRoot$Mo17avg <- rowMeans(tmt.radicleRoot[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.radicleRoot$hybridavg <- rowMeans(tmt.radicleRoot[,c("BM-1", "BM-2", "BM-3")])
+tmt.radicleRoot$MPavg <- rowMeans(tmt.radicleRoot[,c("B73avg", "Mo17avg")])
+
+tmt.radicleRoot$hyb.mp <- tmt.radicleRoot$hybridavg / tmt.radicleRoot$MPavg
+tmt.radicleRoot$B73.Mo17 <- tmt.radicleRoot$B73avg / tmt.radicleRoot$Mo17avg
+
+tmt.radicleRoot$l2.hyb.mp <- log2(tmt.radicleRoot$hyb.mp)
+tmt.radicleRoot$l2.B73.Mo17 <- log2(tmt.radicleRoot$B73.Mo17)
+
+#Germ Em
+tmt.germEm$B73avg <- rowMeans(tmt.germEm[,c("B73-1", "B73-2", "B73-3")])
+tmt.germEm$Mo17avg <- rowMeans(tmt.germEm[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.germEm$hybridavg <- rowMeans(tmt.germEm[,c("BM-1", "BM-2", "BM-3")])
+tmt.germEm$MPavg <- rowMeans(tmt.germEm[,c("B73avg", "Mo17avg")])
+
+tmt.germEm$hyb.mp <- tmt.germEm$hybridavg / tmt.germEm$MPavg
+tmt.germEm$B73.Mo17 <- tmt.germEm$B73avg / tmt.germEm$Mo17avg
+
+tmt.germEm$l2.hyb.mp <- log2(tmt.germEm$hyb.mp)
+tmt.germEm$l2.B73.Mo17 <- log2(tmt.germEm$B73.Mo17)
+
+#sdl Root
+tmt.sdlRoot$B73avg <- rowMeans(tmt.sdlRoot[,c("B73-1", "B73-2", "B73-3")])
+tmt.sdlRoot$Mo17avg <- rowMeans(tmt.sdlRoot[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.sdlRoot$hybridavg <- rowMeans(tmt.sdlRoot[,c("BM-1", "BM-2", "BM-3")])
+tmt.sdlRoot$MPavg <- rowMeans(tmt.sdlRoot[,c("B73avg", "Mo17avg")])
+
+tmt.sdlRoot$hyb.mp <- tmt.sdlRoot$hybridavg / tmt.sdlRoot$MPavg
+tmt.sdlRoot$B73.Mo17 <- tmt.sdlRoot$B73avg / tmt.sdlRoot$Mo17avg
+
+tmt.sdlRoot$l2.hyb.mp <- log2(tmt.sdlRoot$hyb.mp)
+tmt.sdlRoot$l2.B73.Mo17 <- log2(tmt.sdlRoot$B73.Mo17)
+
+#Meristem
+tmt.meristem$B73avg <- rowMeans(tmt.meristem[,c("B73-1", "B73-2", "B73-3")])
+tmt.meristem$Mo17avg <- rowMeans(tmt.meristem[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.meristem$hybridavg <- rowMeans(tmt.meristem[,c("BM-1", "BM-2", "BM-3")])
+tmt.meristem$MPavg <- rowMeans(tmt.meristem[,c("B73avg", "Mo17avg")])
+
+tmt.meristem$hyb.mp <- tmt.meristem$hybridavg / tmt.meristem$MPavg
+tmt.meristem$B73.Mo17 <- tmt.meristem$B73avg / tmt.meristem$Mo17avg
+
+tmt.meristem$l2.hyb.mp <- log2(tmt.meristem$hyb.mp)
+tmt.meristem$l2.B73.Mo17 <- log2(tmt.meristem$B73.Mo17)
+
+#Ear14
+tmt.ear14$B73avg <- rowMeans(tmt.ear14[,c("B73-1", "B73-2", "B73-3")])
+tmt.ear14$Mo17avg <- rowMeans(tmt.ear14[,c("Mo17-1", "Mo17-2", "Mo17-3")])
+tmt.ear14$hybridavg <- rowMeans(tmt.ear14[,c("BM-1", "BM-2", "BM-3")])
+tmt.ear14$MPavg <- rowMeans(tmt.ear14[,c("B73avg", "Mo17avg")])
+
+tmt.ear14$hyb.mp <- tmt.ear14$hybridavg / tmt.ear14$MPavg
+tmt.ear14$B73.Mo17 <- tmt.ear14$B73avg / tmt.ear14$Mo17avg
+
+tmt.ear14$l2.hyb.mp <- log2(tmt.ear14$hyb.mp)
+tmt.ear14$l2.B73.Mo17 <- log2(tmt.ear14$B73.Mo17)
+```
+
+```{r Subset to genes}
+#Kernel BxM
+tmt.kernelBxM.genes <- tmt.kernelBxM[tmt.kernelBxM$Gene%in%Genes$Gene.name,]
+tmt.kernelBxM.genes <- merge.data.frame(tmt.kernelBxM.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Kernel MxB
+tmt.kernelMxB.genes <- tmt.kernelMxB[tmt.kernelMxB$Gene%in%Genes$Gene.name,]
+tmt.kernelMxB.genes <- merge.data.frame(tmt.kernelMxB.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Root
+tmt.root.genes <- tmt.root[tmt.root$Gene%in%Genes$Gene.name,]
+tmt.root.genes <- merge.data.frame(tmt.root.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Endo14 BxM
+tmt.endo14BxM.genes <- tmt.endo14BxM[tmt.endo14BxM$Gene%in%Genes$Gene.name,]
+tmt.endo14BxM.genes <- merge.data.frame(tmt.endo14BxM.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Endo14 MxB
+tmt.endo14MxB.genes <- tmt.endo14MxB[tmt.endo14MxB$Gene%in%Genes$Gene.name,]
+tmt.endo14MxB.genes <- merge.data.frame(tmt.endo14MxB.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Emb27 BxM
+tmt.emb27BxM.genes <- tmt.emb27BxM[tmt.emb27BxM$Gene%in%Genes$Gene.name,]
+tmt.emb27BxM.genes <- merge.data.frame(tmt.emb27BxM.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Emb27 MxB
+tmt.emb27MxB.genes <- tmt.emb27MxB[tmt.emb27MxB$Gene%in%Genes$Gene.name,]
+tmt.emb27MxB.genes <- merge.data.frame(tmt.emb27MxB.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Endo27 BxM
+tmt.endo27BxM.genes <- tmt.endo27BxM[tmt.emb27BxM$Gene%in%Genes$Gene.name,]
+tmt.endo27BxM.genes <- merge.data.frame(tmt.endo27BxM.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Endo27 MxB
+tmt.endo27MxB.genes <- tmt.endo27MxB[tmt.endo27MxB$Gene%in%Genes$Gene.name,]
+tmt.endo27MxB.genes <- merge.data.frame(tmt.endo27MxB.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Coleoptile tip
+tmt.coleoptileTip.genes <- tmt.coleoptileTip[tmt.coleoptileTip$Gene%in%Genes$Gene.name,]
+tmt.coleoptileTip.genes <- merge.data.frame(tmt.coleoptileTip.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Radicle root
+tmt.radicleRoot.genes <- tmt.radicleRoot[tmt.radicleRoot$Gene%in%Genes$Gene.name,]
+tmt.radicleRoot.genes <- merge.data.frame(tmt.radicleRoot.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Germ em
+tmt.germEm.genes <- tmt.germEm[tmt.germEm$Gene%in%Genes$Gene.name,]
+tmt.germEm.genes <- merge.data.frame(tmt.germEm.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Sdl root
+tmt.sdlRoot.genes <- tmt.sdlRoot[tmt.sdlRoot$Gene%in%Genes$Gene.name,]
+tmt.sdlRoot.genes <- merge.data.frame(tmt.sdlRoot.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Meristem
+tmt.meristem.genes <- tmt.meristem[tmt.meristem$Gene%in%Genes$Gene.name,]
+tmt.meristem.genes <- merge.data.frame(tmt.meristem.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+#Ear14
+tmt.ear14.genes <- tmt.ear14[tmt.ear14$Gene%in%Genes$Gene.name,]
+tmt.ear14.genes <- merge.data.frame(tmt.ear14.genes, Genes[,c("Gene.name","Reaction.id")],by.x = "Gene", by.y = "Gene.name", all = F)
+
+```
+```{r Plots}
+#Kernel BxM
+kernelBxM.scat <- ggplot(tmt.kernelBxM.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 BxM/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Kernel B73xMo17")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.kernelBxM.png")
+
+kernelBxM.scat
+
+#Kernel MxB
+kernelMxB.scat <- ggplot(tmt.kernelMxB.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 MxB/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Kernel Mo17xB73")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.kernelMxB.png")
+
+kernelMxB.scat
+
+
+#Root
+root.scat <- ggplot(tmt.root.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 BxM/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Root")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.root.png")
+
+root.scat
+
+#Endo14 BxM
+endo14BxM.scat <- ggplot(tmt.endo14BxM.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 BxM/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Endo14 BxM")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.endo14BxM.png")
+
+endo14BxM.scat
+
+#Endo14 MxB
+endo14MxB.scat <- ggplot(tmt.endo14MxB.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 MxB/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Endo14 MxB")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.endo14MxB.png")
+
+endo14MxB.scat
+
+#Emb27 BxM
+emb27BxM.scat <- ggplot(tmt.emb27BxM.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 BxM/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Emb27 BxM")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.emb27BxM.png")
+
+#Emb27 MxB
+emb27MxB.scat <- ggplot(tmt.emb27MxB.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 MxB/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Emb27 MxB")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.emb27MxB.png")
+
+#Endo27 BxM
+endo27BxM.scat <- ggplot(tmt.endo27BxM.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 BxM/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Endo27 BxM")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.endo27BxM.png")
+
+#Endo27 MxB
+endo27MxB.scat <- ggplot(tmt.endo27MxB, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 MxB/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Endo27 MxB")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.root.png")
+
+#Coleoptile tip
+coleoptile.scat <- ggplot(tmt.coleoptileTip.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 BxM/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Coleoptile Tip")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.coleoptileTip.png")
+
+#Radicle root
+radicleRoot.scat <- ggplot(tmt.radicleRoot.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 BxM/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Radicle Root")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.radicleRoot.png")
+
+#Germ em
+germEm.scat <- ggplot(tmt.germEm.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 BxM/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Germinating Embryo")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.germEm.png")
+
+#sdl root
+sdlRoot.scat <- ggplot(tmt.sdlRoot.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 BxM/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Seedling Root")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.sdlRoot.png")
+
+#meristem
+meristem.scat <- ggplot(tmt.meristem.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 BxM/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Meristem")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.meristem.png")
+
+#ear14
+ear14.scat <- ggplot(tmt.ear14.genes, mapping = aes(x = l2.hyb.mp, y = l2.B73.Mo17, color = Reaction.id)) +
+  geom_point(size = 2)+
+  xlim(-1.5,1.5)+
+  ylim(-1.5,1.5)+
+  xlab("log2 BxM/MP")+
+  ylab("log2 B73/Mo17")+
+  geom_vline(xintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  geom_hline(yintercept=0, linetype="dashed", color = "gray60", size=0.5)+
+  coord_fixed()+
+  theme_bw()+
+  ggtitle("Ear14")+
+  theme(plot.title = element_text(hjust = 0.5), aspect.ratio = 1)
+ggsave("tmt.ear14.png")
+
+```
+
+
